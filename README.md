@@ -1,2 +1,2 @@
 # KCL_Slides_Downloader
-This is a downloader to download kcl course slides
+This is a simple downloader to download kcl course slides
