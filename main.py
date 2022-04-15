@@ -2,7 +2,6 @@
 import re
 import os
 import time
-from typing import Counter
 
 # import download module
 import requests
@@ -34,7 +33,7 @@ def get_course_title(soup) -> str:
         Returns:
             str: course title
     """
-    return soup.find("ul", class_="breadcrumb").find_all("li")[2].find("a")["title"]
+    return soup.find("ul", class_="breadcrumb").find_all("li")[2].find("a")["title"].replace('%20', ' ').replace('&amp;', '&')
 
 def get_weeks(soup) -> list:
     """get weeks from url
@@ -46,7 +45,7 @@ def get_weeks(soup) -> list:
         Returns:
             list: html for each week
     """
-    return soup.find("div", {"class": "course-content"}).find_all("li")
+    return soup.find("div", {"class": "course-content"}).find_all("li", class_="section")
 
 def get_file_list(soup) -> list:
     """get file list from url
@@ -58,6 +57,7 @@ def get_file_list(soup) -> list:
         Returns:
             list: list of file urls
     """
+    file_names = []
     files = []
     file_pages = soup.findAll("a", "aalink", href=re.compile("(resource|folder)"))
     for page in file_pages:
@@ -65,6 +65,12 @@ def get_file_list(soup) -> list:
         page_soup = get_page(page_url, headers)
         file_html = get_files_on_page(page_soup)
         for file in file_html:
+            files.append(file["href"].split('?')[0])
+            file_names.append(file["href"].split('?')[0].split('/')[-1].replace('%20', ' ').replace('&amp;', '&').replace('%28', '(').replace('%29', ')'))
+
+    files_on_page = get_files_in_section(soup)
+    for file in files_on_page:
+        if file["href"].split('?')[0].split('/')[-1].replace('%20', ' ').replace('&amp;', '&').replace('%28', '(').replace('%29', ')') not in file_names:
             files.append(file["href"].split('?')[0])
     return files
 
@@ -82,6 +88,19 @@ def get_files_on_page(soup) -> list:
         "(.pdf|.ppt|.pptx|.zip|.rar|.doc|.docx|.xls|.xlsx|.txt)"))
     return files
 
+def get_files_in_section(soup) -> list:
+    """get file list from current page
+
+        Parameters:
+            soup (BeautifulSoup): soup of the page
+
+        Returns:
+            list: list of file urls
+    """
+    files = soup.findAll("a", href=re.compile(
+        "(.pdf|.ppt|.pptx|.zip|.rar|.doc|.docx|.xls|.xlsx|.txt)"))
+    return files
+
 
 def download_file(url, headers, path):
     """download file from url
@@ -91,7 +110,7 @@ def download_file(url, headers, path):
             headers (dict): headers for the request
             path (str): path to save the file
     """
-    file_name = url.split('/')[-1].replace('%20', ' ')
+    file_name = url.split('/')[-1].replace('%20', ' ').replace('&amp;', '&').replace('%28', '(').replace('%29', ')')
     file_path = os.path.join(path, file_name)
     i = 0
     while i < 3:
@@ -128,7 +147,7 @@ def download_files_in_one_folder(course_page, headers, course_title):
     
     file_list = get_file_list(course_page)
     file_log = tqdm(total=0, position=1, bar_format="{desc}")
-    for file in tqdm(file_list, unit="file", position=0):
+    for file in tqdm(file_list, unit="file", position=0, colour="CYAN"):
         file_log.set_description_str(
             f"Downloading {file.split('/')[-1].replace('%20', ' ')}")
         download_file(file, headers, course_title)
@@ -150,21 +169,22 @@ def download_files_by_week(course_page, headers, course_title):
             dir_name = sectioname.text
         files = get_file_list(week)
         if files and dir_name:
-            if dir_name in files_dict:
+            if dir_name in files_dict.keys():
                 files_dict[dir_name] += files
             else:
                 files_dict[dir_name] = files
-    
-    process_log = tqdm(total=0, position=1, bar_format="{desc}")
-    for dir_name, files in tqdm(files_dict.items(), position=0, unit="week"):
+
+    progress_bar = tqdm(total=sum((len(v) for v in files_dict.values())), position=0, unit="file", colour="CYAN")
+    progress_log = tqdm(total=0, position=1, bar_format="{desc}")
+    for dir_name, files in files_dict.items():
         dir_path = os.path.join(course_title, dir_name)
-        print(dir_path)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         for file in files:
-            process_log.set_description_str(
+            progress_log.set_description_str(
                 f"Downloading {file.split('/')[-1].replace('%20', ' ')}")
             download_file(file, headers, dir_path)
+            progress_bar.update(1)
 
 
 
@@ -210,7 +230,7 @@ if __name__ == '__main__':
     else:
         download_files_by_week(course_page, headers, course_title)
 
-
+    print("Done!")
 
     
 
