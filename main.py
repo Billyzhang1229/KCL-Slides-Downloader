@@ -34,7 +34,7 @@ def get_course_title(soup) -> str:
         Returns:
             str: course title
     """
-    return soup.find("div", {"class": "hero-box"}).find("h1").text
+    return soup.find("ul", class_="breadcrumb").find_all("li")[2].find("a")["title"]
 
 def get_weeks(soup) -> list:
     """get weeks from url
