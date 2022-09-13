@@ -1,5 +1,5 @@
 # KCL Slides Downloader
-This is a simple downloader to download kcl course slides
+This is a simple downloader to help you download kcl course slides
 
 ## Usage
 
