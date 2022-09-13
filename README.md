@@ -19,7 +19,8 @@ python main.py
 ```
 4. You will need cookies to download the slides (you can use the cookies from your browser)
 ```
-1. Press F12 or right click on the browser and select "Inspect" to open the developer tools
+For Chrome
+1. Press F12 or right click on the browser  and select "Inspect" to open the developer tools
 2. Click on the "Network" tab (if nothing is shown, refresh the page)
 3. Choose the one called "view.php?id=xxxxx"
 4. Copy the cookies from the "Headers" tab
